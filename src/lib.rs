@@ -455,21 +455,8 @@ impl MastodonClient for Mastodon {
         url.query_pairs_mut()
             .append_pair("access_token", &self.token)
             .append_pair("stream", "user");
-        let mut url: url::Url = reqwest::blocking::get(url.as_str())?
-            .url()
-            .as_str()
-            .parse()?;
-        let new_scheme = match url.scheme() {
-            "http" => "ws",
-            "https" => "wss",
-            x => return Err(Error::Other(format!("Bad URL scheme: {}", x))),
-        };
-        url.set_scheme(new_scheme)
-            .map_err(|_| Error::Other("Bad URL scheme!".to_string()))?;
 
-        let client = tungstenite::connect(url.as_str())?.0;
-
-        Ok(EventReader(WebSocket(client)))
+        streaming_from(url)
     }
 
     /// returns all public statuses
@@ -478,21 +465,8 @@ impl MastodonClient for Mastodon {
         url.query_pairs_mut()
             .append_pair("access_token", &self.token)
             .append_pair("stream", "public");
-        let mut url: url::Url = reqwest::blocking::get(url.as_str())?
-            .url()
-            .as_str()
-            .parse()?;
-        let new_scheme = match url.scheme() {
-            "http" => "ws",
-            "https" => "wss",
-            x => return Err(Error::Other(format!("Bad URL scheme: {}", x))),
-        };
-        url.set_scheme(new_scheme)
-            .map_err(|_| Error::Other("Bad URL scheme!".to_string()))?;
 
-        let client = tungstenite::connect(url.as_str())?.0;
-
-        Ok(EventReader(WebSocket(client)))
+        streaming_from(url)
     }
 
     /// Returns all local statuses
@@ -501,21 +475,8 @@ impl MastodonClient for Mastodon {
         url.query_pairs_mut()
             .append_pair("access_token", &self.token)
             .append_pair("stream", "public:local");
-        let mut url: url::Url = reqwest::blocking::get(url.as_str())?
-            .url()
-            .as_str()
-            .parse()?;
-        let new_scheme = match url.scheme() {
-            "http" => "ws",
-            "https" => "wss",
-            x => return Err(Error::Other(format!("Bad URL scheme: {}", x))),
-        };
-        url.set_scheme(new_scheme)
-            .map_err(|_| Error::Other("Bad URL scheme!".to_string()))?;
 
-        let client = tungstenite::connect(url.as_str())?.0;
-
-        Ok(EventReader(WebSocket(client)))
+        streaming_from(url)
     }
 
     /// Returns all public statuses for a particular hashtag
@@ -525,21 +486,8 @@ impl MastodonClient for Mastodon {
             .append_pair("access_token", &self.token)
             .append_pair("stream", "hashtag")
             .append_pair("tag", hashtag);
-        let mut url: url::Url = reqwest::blocking::get(url.as_str())?
-            .url()
-            .as_str()
-            .parse()?;
-        let new_scheme = match url.scheme() {
-            "http" => "ws",
-            "https" => "wss",
-            x => return Err(Error::Other(format!("Bad URL scheme: {}", x))),
-        };
-        url.set_scheme(new_scheme)
-            .map_err(|_| Error::Other("Bad URL scheme!".to_string()))?;
 
-        let client = tungstenite::connect(url.as_str())?.0;
-
-        Ok(EventReader(WebSocket(client)))
+        streaming_from(url)
     }
 
     /// Returns all local statuses for a particular hashtag
@@ -549,21 +497,8 @@ impl MastodonClient for Mastodon {
             .append_pair("access_token", &self.token)
             .append_pair("stream", "hashtag:local")
             .append_pair("tag", hashtag);
-        let mut url: url::Url = reqwest::blocking::get(url.as_str())?
-            .url()
-            .as_str()
-            .parse()?;
-        let new_scheme = match url.scheme() {
-            "http" => "ws",
-            "https" => "wss",
-            x => return Err(Error::Other(format!("Bad URL scheme: {}", x))),
-        };
-        url.set_scheme(new_scheme)
-            .map_err(|_| Error::Other("Bad URL scheme!".to_string()))?;
 
-        let client = tungstenite::connect(url.as_str())?.0;
-
-        Ok(EventReader(WebSocket(client)))
+        streaming_from(url)
     }
 
     /// Returns statuses for a list
@@ -573,21 +508,8 @@ impl MastodonClient for Mastodon {
             .append_pair("access_token", &self.token)
             .append_pair("stream", "list")
             .append_pair("list", list_id);
-        let mut url: url::Url = reqwest::blocking::get(url.as_str())?
-            .url()
-            .as_str()
-            .parse()?;
-        let new_scheme = match url.scheme() {
-            "http" => "ws",
-            "https" => "wss",
-            x => return Err(Error::Other(format!("Bad URL scheme: {}", x))),
-        };
-        url.set_scheme(new_scheme)
-            .map_err(|_| Error::Other("Bad URL scheme!".to_string()))?;
 
-        let client = tungstenite::connect(url.as_str())?.0;
-
-        Ok(EventReader(WebSocket(client)))
+        streaming_from(url)
     }
 
     /// Returns all direct messages
@@ -596,21 +518,8 @@ impl MastodonClient for Mastodon {
         url.query_pairs_mut()
             .append_pair("access_token", &self.token)
             .append_pair("stream", "direct");
-        let mut url: url::Url = reqwest::blocking::get(url.as_str())?
-            .url()
-            .as_str()
-            .parse()?;
-        let new_scheme = match url.scheme() {
-            "http" => "ws",
-            "https" => "wss",
-            x => return Err(Error::Other(format!("Bad URL scheme: {}", x))),
-        };
-        url.set_scheme(new_scheme)
-            .map_err(|_| Error::Other("Bad URL scheme!".to_string()))?;
 
-        let client = tungstenite::connect(url.as_str())?.0;
-
-        Ok(EventReader(WebSocket(client)))
+        streaming_from(url)
     }
 
     /// Equivalent to /api/v1/media
@@ -889,4 +798,22 @@ fn deserialise_blocking<T: for<'de> serde::Deserialize<'de>>(response: Response)
             Err(e.into())
         },
     }
+}
+
+fn streaming_from(url: url::Url) -> Result<EventReader<WebSocket>> {
+    let mut url: url::Url = reqwest::blocking::get(url.as_str())?
+        .url()
+        .as_str()
+        .parse()?;
+    let new_scheme = match url.scheme() {
+        "http" => "ws",
+        "https" => "wss",
+        x => return Err(Error::Other(format!("Bad URL scheme: {}", x))),
+    };
+    url.set_scheme(new_scheme)
+        .map_err(|_| Error::Other("Bad URL scheme!".to_string()))?;
+
+    let client = tungstenite::connect(url.as_str())?.0;
+
+    Ok(EventReader(WebSocket(client)))
 }
